@@ -2,9 +2,9 @@
 // db_connect.php
 
 $servername = "localhost";
-$username = "root"; // Ganti dengan username database Anda
-$password = "";     // Ganti dengan password database Anda
-$dbname = "db_sampah";
+$username = "projec15_root"; // Ganti dengan username database Anda
+$password = "@kaesquare123";     // Ganti dengan password database Anda
+$dbname = "projec15_db_sampah";
 
 // Membuat koneksi
 $conn = new mysqli($servername, $username, $password, $dbname);
