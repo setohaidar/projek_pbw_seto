@@ -10,9 +10,9 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Mengambil data pengguna dengan LEFT JOIN untuk memastikan data user selalu ada
+// Menambahkan 'provinsi' ke dalam query SELECT
 $stmt = $conn->prepare("
-    SELECT u.nama_lengkap, u.email, u.nomor_telepon, a.alamat, a.no_rumah, a.rt, a.rw, a.kelurahan, a.kecamatan, a.kota
+    SELECT u.nama_lengkap, u.email, u.nomor_telepon, a.alamat, a.no_rumah, a.rt, a.rw, a.kelurahan, a.kecamatan, a.kota, a.provinsi
     FROM users u
     LEFT JOIN alamat a ON u.id = a.user_id
     WHERE u.id = ? LIMIT 1
@@ -23,18 +23,14 @@ $result = $stmt->get_result();
 $user_data = $result->fetch_assoc();
 $stmt->close();
 
-// ================= PERBAIKAN UTAMA DI SINI =================
-// Daftar semua kolom alamat yang mungkin bernilai NULL
-$alamat_fields = ['alamat', 'no_rumah', 'rt', 'rw', 'kelurahan', 'kecamatan', 'kota'];
+// Menambahkan 'provinsi' ke daftar field yang akan diperiksa
+$alamat_fields = ['alamat', 'no_rumah', 'rt', 'rw', 'kelurahan', 'kecamatan', 'kota', 'provinsi'];
 
-// Looping untuk mengubah nilai NULL menjadi string kosong ''
 foreach ($alamat_fields as $field) {
     if (!isset($user_data[$field]) || $user_data[$field] === null) {
         $user_data[$field] = '';
     }
 }
-// ==========================================================
-
 ?>
 
 <div class="content-header">
@@ -62,6 +58,7 @@ foreach ($alamat_fields as $field) {
         </div>
         
         <h3 style="margin-top: 2rem; margin-bottom: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">Alamat Pengiriman/Penjemputan</h3>
+        
         <div class="input-group">
             <label for="alamat">Alamat</label>
             <input type="text" id="alamat" name="alamat" placeholder="Contoh: Jl. Kelapa Puan" value="<?php echo htmlspecialchars($user_data['alamat']); ?>">
@@ -89,6 +86,11 @@ foreach ($alamat_fields as $field) {
         <div class="input-group">
             <label for="kota">Kota / Kabupaten</label>
             <input type="text" id="kota" name="kota" placeholder="Contoh: Jakarta Selatan" value="<?php echo htmlspecialchars($user_data['kota']); ?>">
+        </div>
+        
+        <div class="input-group">
+            <label for="provinsi">Provinsi</label>
+            <input type="text" id="provinsi" name="provinsi" placeholder="Contoh: DKI Jakarta" value="<?php echo htmlspecialchars($user_data['provinsi']); ?>">
         </div>
         
         <button type="submit" class="btn-submit">Simpan Perubahan</button>
