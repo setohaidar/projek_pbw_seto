@@ -8,8 +8,9 @@ if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// ... (kode untuk memproses data form tidak berubah) ...
 $user_id = $_SESSION['user_id'];
+
+// Ambil data dari form, termasuk provinsi
 $nama_lengkap = $_POST['nama_lengkap'];
 $nomor_telepon = $_POST['nomor_telepon'];
 $alamat = $_POST['alamat'];
@@ -19,29 +20,36 @@ $rw = $_POST['rw'];
 $kelurahan = $_POST['kelurahan'];
 $kecamatan = $_POST['kecamatan'];
 $kota = $_POST['kota'];
+$provinsi = $_POST['provinsi']; // Mengambil data provinsi
 
-// ... (kode validasi dan simpan ke database tidak berubah) ...
+if (empty($nama_lengkap) || empty($nomor_telepon)) {
+    $_SESSION['message'] = "Nama lengkap dan nomor telepon tidak boleh kosong.";
+    header("Location: dashboardpengguna.php?page=profil_page");
+    exit();
+}
+
 $conn->begin_transaction();
 try {
-    // Update users
-    $stmt_user = $conn->prepare("UPDATE users SET nama_lengkap = ?, nomor_telepon = ? WHERE id = ?");
+    $stmt_user = $conn->prepare("UPDATE `users` SET `nama_lengkap` = ?, `nomor_telepon` = ? WHERE `id` = ?");
     $stmt_user->bind_param("ssi", $nama_lengkap, $nomor_telepon, $user_id);
     $stmt_user->execute();
     $stmt_user->close();
 
-    // Update/Insert alamat
-    $stmt_check = $conn->prepare("SELECT id FROM alamat WHERE user_id = ?");
+    $stmt_check = $conn->prepare("SELECT `id` FROM `alamat` WHERE `user_id` = ?");
     $stmt_check->bind_param("i", $user_id);
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
     $stmt_check->close();
 
     if ($result_check->num_rows > 0) {
-        $stmt_alamat = $conn->prepare("UPDATE alamat SET alamat = ?, no_rumah = ?, rt = ?, rw = ?, kelurahan = ?, kecamatan = ?, kota = ? WHERE user_id = ?");
-        $stmt_alamat->bind_param("sssssssi", $alamat, $no_rumah, $rt, $rw, $kelurahan, $kecamatan, $kota, $user_id);
+        // PERBAIKAN: Menambahkan `provinsi` ke query UPDATE
+        $stmt_alamat = $conn->prepare("UPDATE `alamat` SET `alamat` = ?, `no_rumah` = ?, `rt` = ?, `rw` = ?, `kelurahan` = ?, `kecamatan` = ?, `kota` = ?, `provinsi` = ? WHERE `user_id` = ?");
+        $stmt_alamat->bind_param("ssssssssi", $alamat, $no_rumah, $rt, $rw, $kelurahan, $kecamatan, $kota, $provinsi, $user_id);
     } else {
-        $stmt_alamat = $conn->prepare("INSERT INTO alamat (user_id, alamat, no_rumah, rt, rw, kelurahan, kecamatan, kota, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Rumah')");
-        $stmt_alamat->bind_param("isssssss", $user_id, $alamat, $no_rumah, $rt, $rw, $kelurahan, $kecamatan, $kota);
+        // PERBAIKAN: Menambahkan `provinsi` ke query INSERT
+        $default_label = 'Rumah';
+        $stmt_alamat = $conn->prepare("INSERT INTO `alamat` (`user_id`, `label`, `alamat`, `no_rumah`, `rt`, `rw`, `kelurahan`, `kecamatan`, `kota`, `provinsi`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt_alamat->bind_param("isssssssss", $user_id, $default_label, $alamat, $no_rumah, $rt, $rw, $kelurahan, $kecamatan, $kota, $provinsi);
     }
     $stmt_alamat->execute();
     $stmt_alamat->close();
@@ -52,11 +60,10 @@ try {
     $_SESSION['message'] = "Profil berhasil diperbarui!";
 } catch (mysqli_sql_exception $exception) {
     $conn->rollback();
-    $_SESSION['message'] = "Terjadi kesalahan saat memperbarui profil.";
+    $_SESSION['message'] = "Terjadi kesalahan saat memperbarui profil: " . $exception->getMessage();
 }
-$conn->close();
 
-// Pengalihan kembali yang benar
+$conn->close();
 header("Location: dashboardpengguna.php?page=profil_page");
 exit();
 ?>
